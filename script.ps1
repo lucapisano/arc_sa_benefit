@@ -119,8 +119,7 @@ function Set-Attestation {
         };  
         $json = $data | ConvertTo-Json; 
         $response = Invoke-RestMethod -Method PUT -Uri $uri.AbsoluteUri -ContentType $contentType -Headers $header -Body $json; 
-        $response.properties
-
+        Write-Host "$machineName SA benefits activated"
     }
     catch {
         
