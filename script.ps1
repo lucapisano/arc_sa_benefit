@@ -49,25 +49,6 @@ param(
     [string]$tenantId
 )
 
-#####################################
-#End of Parameters definition block #
-#####################################
-
-##############################
-# Variables definition block #
-##############################
-
-
-
-
-#########################################
-# End of the variables definition block #
-#########################################
-
-################################
-# Function(s) definition block #
-################################
-
 function Get-AzureADBearerToken {
     param(
         [Parameter(Mandatory=$true, HelpMessage="The tenant ID of the Microsoft Entra instance used for authentication.")]
@@ -77,7 +58,7 @@ function Get-AzureADBearerToken {
     )
 
     try {
-        $account       = Connect-AzAccount -Subscription $subscriptionId -Tenant $tenantId
+        $account       = Connect-AzAccount -UseDeviceAuthentication -Subscription $subscriptionId -Tenant $tenantId
         $context       = Set-azContext -Subscription $subscriptionId 
         $profile       = [Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile 
         $profileClient = [Microsoft.Azure.Commands.ResourceManager.Common.rmProfileClient]::new( $profile ) 
@@ -132,17 +113,12 @@ function Set-Attestation {
 
 }
 
-#######################################
-# End of Function(s) definition block #
-#######################################
-
-
 #####################
 # Main script block #
 #####################
 
 #Kusto query for the Arc Enabled Servers eligible for Software Assurance
-$query = "resources | where type =~ 'microsoft.hybridcompute/machines' and isempty(kind) | extend status = properties.status | extend operatingSystem = properties.osSku | where properties.osType =~ 'windows' | extend esuState = properties.licenseProfile.esuProfile.esuKeyState | extend licenseProfile = properties.licenseProfile | extend licenseStatus = tostring(licenseProfile.licenseStatus) | extend licenseChannel = tostring(licenseProfile.licenseChannel) | extend productSubscriptionStatus = tostring(licenseProfile.productProfile.subscriptionStatus) | extend softwareAssurance = licenseProfile.softwareAssurance | extend softwareAssuranceCustomer = licenseProfile.softwareAssurance.softwareAssuranceCustomer | extend benefitsStatus = case( softwareAssuranceCustomer == true, 'Activated', (licenseStatus =~ 'Licensed' and licenseChannel =~ 'PGS:TB') or productSubscriptionStatus =~ 'Enabled', 'Activated via Pay-as-you-go', isnull(softwareAssurance) or isnull(softwareAssuranceCustomer) or softwareAssuranceCustomer == false, 'Not activated', 'Not activated') | extend benefitsStatusIcon = case( softwareAssuranceCustomer == true, '8', softwareAssuranceCustomer == true, '8', (licenseStatus =~ 'Licensed' and licenseChannel =~ 'PGS:TB') or productSubscriptionStatus =~ 'Enabled', '8', isnull(softwareAssurance) or isnull(softwareAssuranceCustomer) or softwareAssuranceCustomer == false, '7', '7') | project name, status, esuState, benefitsStatus, benefitsStatusIcon, resourceGroup, subscriptionId, operatingSystem, id, type, location, kind, tags | where (type in~ ('Microsoft.HybridCompute/machinesSoftwareAssurance','Microsoft.HybridCompute/machines')) | where benefitsStatus in~ ('Not activated') | where status =~ 'Connected' | where esuState =~ 'Inactive' | sort by (tolower(tostring(name))) asc"
+$query = "resources | where type =~ 'microsoft.hybridcompute/machines' and isempty(kind) | extend status = properties.status | extend operatingSystem = properties.osSku | where properties.osType =~ 'windows' | extend cloudProvider = properties.cloudMetadata.provider | extend esuState = properties.licenseProfile.esuProfile.licenseAssignmentState | extend licenseProfile = properties.licenseProfile | extend licenseStatus = tostring(licenseProfile.licenseStatus) | extend licenseChannel = tostring(licenseProfile.licenseChannel) | extend productSubscriptionStatus = tostring(licenseProfile.productProfile.subscriptionStatus) | extend softwareAssurance = licenseProfile.softwareAssurance | extend softwareAssuranceCustomer = licenseProfile.softwareAssurance.softwareAssuranceCustomer | extend benefitsStatus = case( softwareAssuranceCustomer == true, 'Activated', (licenseStatus =~ 'Licensed' and licenseChannel =~ 'PGS:TB') or productSubscriptionStatus =~ 'Enabled', 'Activated via Pay-as-you-go', isnull(softwareAssurance) or isnull(softwareAssuranceCustomer) or softwareAssuranceCustomer == false, 'Not activated', 'Not activated') | extend benefitsStatusIcon = case( softwareAssuranceCustomer == true, '8', softwareAssuranceCustomer == true, '8', (licenseStatus =~ 'Licensed' and licenseChannel =~ 'PGS:TB') or productSubscriptionStatus =~ 'Enabled', '8', isnull(softwareAssurance) or isnull(softwareAssuranceCustomer) or softwareAssuranceCustomer == false, '7', '7') | project name, cloudProvider, status, esuState, benefitsStatus, benefitsStatusIcon, resourceGroup, subscriptionId, operatingSystem, id, type, location, kind, tags | where (type in~ ('Microsoft.HybridCompute/machinesSoftwareAssurance','Microsoft.HybridCompute/machines')) | where benefitsStatus in~ ('Not activated') | where status =~ 'Connected' | where esuState != 'Assigned' | where cloudProvider =~ 'N/A' | sort by (tolower(tostring(name))) asc"
 
 #Loop through the Arc Enabled Servers and set the Software Assurance attestation
 $counter = 0
@@ -157,8 +133,6 @@ $data = @{
 }; 
 $queryjson = $data | ConvertTo-Json; 
 $graphResponse = Invoke-RestMethod -Method Post -Uri $graphuri.AbsoluteUri -ContentType $contentType -Headers $header -Body $queryjson; 
-
-
 
 $graphResponse.data | ForEach-Object {
     $counter++
