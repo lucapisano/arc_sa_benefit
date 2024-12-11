@@ -133,7 +133,7 @@ $data = @{
 }; 
 $queryjson = $data | ConvertTo-Json; 
 $graphResponse = Invoke-RestMethod -Method Post -Uri $graphuri.AbsoluteUri -ContentType $contentType -Headers $header -Body $queryjson; 
-
+Write-Host "Activating SA benefits on $($graphResponse.totalRecords) servers"
 $graphResponse.data | ForEach-Object {
     $counter++
         
