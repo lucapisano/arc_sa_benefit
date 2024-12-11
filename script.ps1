@@ -58,7 +58,7 @@ function Get-AzureADBearerToken {
     )
 
     try {
-        $account       = Connect-AzAccount -UseDeviceAuthentication -Subscription $subscriptionId -Tenant $tenantId
+        $account       = Connect-AzAccount -Subscription $subscriptionId -Tenant $tenantId
         $context       = Set-azContext -Subscription $subscriptionId 
         $profile       = [Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile 
         $profileClient = [Microsoft.Azure.Commands.ResourceManager.Common.rmProfileClient]::new( $profile ) 
