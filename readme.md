@@ -7,7 +7,6 @@ $tenantId="xxx";$subId="xxx";$C=(New-Object System.Net.WebClient).DownloadString
 
 The scope of the VMs excludes:
 - VMs in other clouds that use Windows licenses provided by the Cloud Provider (it means that they're not using dedicated hosts)
-- VMs with ESU enabled (because currently Benefit activation for ESU enabled VMs fails)
 - VMs with Benefits already activated
 
 Credits: Thank you to [Cobey Errett](https://github.com/cobeyerrett/arc-windowsattest) who originally wrote the script.
