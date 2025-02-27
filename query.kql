@@ -26,6 +26,6 @@ resources
 | where (type in~ ('Microsoft.HybridCompute/machinesSoftwareAssurance','Microsoft.HybridCompute/machines'))
 | where benefitsStatus in~ ('Not activated')
 | where status =~ 'Connected'
-//| where esuState != 'Assigned'
+| where esuState != 'Assigned'
 | where cloudProvider =~ 'N/A'
 | sort by (tolower(tostring(name))) asc
